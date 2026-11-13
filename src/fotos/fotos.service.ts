@@ -4,9 +4,9 @@ import type { Foto } from './entities/foto.entity.js';
 @Injectable()
 export class FotosService {
     private fotos: Foto[] = [
-        { id: 1, titulo: 'Foto 1', descripcion: 'Descripción de la foto 1', califacion: 5 },
-        { id: 2, titulo: 'Foto 2', descripcion: 'Descripción de la foto 2', califacion: 4 },
-        { id: 3, titulo: 'Foto 3', descripcion: 'Descripción de la foto 3', califacion: 3 },
+        { id: 1, titulo: 'Foto 1', descripcion: 'Descripción de la foto 1', calificacion: 5 },
+        { id: 2, titulo: 'Foto 2', descripcion: 'Descripción de la foto 2', calificacion: 4 },
+        { id: 3, titulo: 'Foto 3', descripcion: 'Descripción de la foto 3', calificacion: 3 },
     ];
 
     findAll(): Foto[] {

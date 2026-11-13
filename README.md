@@ -52,7 +52,7 @@ Cada foto tiene la siguiente forma:
   "id": 1,
   "titulo": "Foto 1",
   "descripcion": "Descripción de la foto 1",
-  "califacion": 5
+  "calificacion": 5
 }
 ```
 
@@ -76,7 +76,7 @@ Cada foto tiene la siguiente forma:
 
 - **Entidad:**
 
-  En `entities/foto.entity.ts` se definió la interfaz `Foto` con `id`, `titulo`, `descripcion` (opcional) y `califacion`. Se importa con `import type`, ya que solo se usa para tipar y no existe en tiempo de ejecución.
+  En `entities/foto.entity.ts` se definió la interfaz `Foto` con `id`, `titulo`, `descripcion` (opcional) y `calificacion`. Se importa con `import type`, ya que solo se usa para tipar y no existe en tiempo de ejecución.
 
 - **Módulo:**
 
@@ -134,7 +134,7 @@ curl.exe -s -w " -> %{http_code}\n" http://localhost:3000/api/fotos/9
 curl.exe -s -w " -> %{http_code}\n" http://localhost:3000/api/fotos/abc
 
 # Crear una foto -> 201
-curl.exe --% -s -w " -> %{http_code}\n" -X POST -H "Content-Type: application/json" -d "{\"titulo\":\"Cerro\",\"califacion\":5}" http://localhost:3000/api/fotos
+curl.exe --% -s -w " -> %{http_code}\n" -X POST -H "Content-Type: application/json" -d "{\"titulo\":\"Cerro\",\"calificacion\":5}" http://localhost:3000/api/fotos
 ```
 
 > En PowerShell se usa `curl.exe` en lugar de `curl`, y `--%` en las peticiones con cuerpo JSON para que las comillas lleguen intactas.
