@@ -22,11 +22,25 @@ export class FotosService {
     }
 
     create(datos: Omit<Foto, 'id'>): Foto {
+        const maxId = this.fotos.reduce((max, foto) => Math.max(max, foto.id), 0);
         const nuevaFoto: Foto = {
-            id: this.fotos.length + 1,
             ...datos,
+            id: maxId + 1,
         };
         this.fotos.push(nuevaFoto);
         return nuevaFoto;
+    }
+
+    update(id: number, datos: Partial<Omit<Foto, 'id'>>): Foto {
+        const foto = this.findOne(id);
+        const { id: _ignorado, ...cambios } = datos as Partial<Foto>;
+        Object.assign(foto, cambios);
+        return foto;
+    }
+
+    remove(id: number): void {
+        const foto = this.findOne(id);
+        const indice = this.fotos.indexOf(foto);
+        this.fotos.splice(indice, 1);
     }
 }

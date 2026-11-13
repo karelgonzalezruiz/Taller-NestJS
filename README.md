@@ -2,7 +2,7 @@
 
 Desarrollo de una API REST utilizando Node.js y NestJS para la gestión de un álbum de fotos.
 
-El proyecto implementa un servidor HTTP organizado en módulos, controladores y servicios, que expone rutas para listar, consultar y crear fotos, respondiendo siempre en formato JSON con los códigos de estado HTTP correspondientes. Por ahora, los datos se guardan en un arreglo en memoria dentro del servicio, que funciona como una "base de datos" temporal.
+El proyecto implementa un servidor HTTP organizado en módulos, controladores y servicios, que expone un CRUD completo con rutas para listar, consultar, crear, actualizar y eliminar fotos, respondiendo siempre en formato JSON con los códigos de estado HTTP correspondientes. Por ahora, los datos se guardan en un arreglo en memoria dentro del servicio, que funciona como una "base de datos" temporal.
 
 A diferencia de una API hecha directamente con Express, NestJS ya trae resueltas varias tareas: interpreta el cuerpo JSON de las peticiones, valida parámetros con *pipes* y convierte las excepciones en respuestas HTTP con el código y el mensaje adecuados.
 
@@ -44,6 +44,8 @@ album-api/
 | `GET`  | `/api/fotos`     | Lista todas las fotos        | `200`               |
 | `GET`  | `/api/fotos/:id` | Obtiene una foto por su `id` | `200`, `400`, `404` |
 | `POST` | `/api/fotos`     | Crea una nueva foto          | `201`               |
+| `PATCH`  | `/api/fotos/:id` | Actualiza solo los campos enviados | `200`, `400`, `404` |
+| `DELETE` | `/api/fotos/:id` | Elimina una foto                   | `204`, `400`, `404` |
 
 Cada foto tiene la siguiente forma:
 
@@ -92,13 +94,13 @@ Cada foto tiene la siguiente forma:
 
   - `findAll()` devuelve el arreglo completo.
   - `findOne(id)` busca la foto con `find()`. Si no existe, lanza `NotFoundException` con el mensaje `Foto X no encontrada`, y Nest la convierte automáticamente en una respuesta `404`.
-  - `create(datos)` recibe todos los campos menos el `id` (`Omit<Foto, 'id'>`), le asigna como `id` la cantidad de fotos más uno, la agrega al arreglo y la devuelve.
+  - `create(datos)` recibe todos los campos menos el `id` (`Omit<Foto, 'id'>`), le asigna como `id` el mayor `id` existente más uno, la agrega al arreglo y la devuelve.
 
 ### Parte 4: controlador y validación del id
 
 - **Rutas:**
 
-  `FotosController` usa `@Controller('fotos')` y recibe el servicio por el constructor. Define `@Get()` para listar, `@Get(':id')` para consultar una foto y `@Post()` para crear, tomando el cuerpo con `@Body()`.
+  `FotosController` usa `@Controller('fotos')` y recibe el servicio por el constructor. Define `@Get()` para listar, `@Get(':id')` para consultar una foto, `@Post()` para crear, `@Patch(':id')` para actualizar y `@Delete(':id')` para eliminar, tomando el cuerpo con `@Body()`.
 
 - **Validación del parámetro:**
 
@@ -106,7 +108,7 @@ Cada foto tiene la siguiente forma:
 
 - **Códigos de estado:**
 
-  Nest responde `200` en los `GET` y `201` en el `POST` sin necesidad de indicarlo.
+  Nest responde `200` en los `GET` y `PATCH` y `201` en el `POST` sin necesidad de indicarlo. El `DELETE` responde `204` gracias a `@HttpCode(204)` (ver la parte 6).
 
 ### Parte 5: errores encontrados y cómo se resolvieron
 
@@ -115,9 +117,27 @@ Cada foto tiene la siguiente forma:
 - **"Cannot find module './entities/foto.entity.js'" solo en el editor:** el compilador encontraba el archivo, pero VS Code usaba su propia versión de TypeScript. Se agregó `.vscode/settings.json` con `typescript.tsdk` apuntando a `node_modules/typescript/lib`, y desde la paleta de comandos se eligió **TypeScript: Select TypeScript Version → Use Workspace Version** y luego **TypeScript: Restart TS Server**.
 - **Llave de cierre de más:** una `}` después de `findOne` cerraba la clase antes de tiempo y dejaba el método `create` fuera de `FotosService`. Se eliminó esa llave.
 
-### Parte 6: persistencia de los datos
+### Parte 6: CRUD completo
 
-Como el arreglo `fotos` vive dentro del servicio, en la memoria del proceso de Node.js, cada vez que el servidor se reinicia (por ejemplo, al guardar un archivo con `start:dev`) la lista vuelve a las tres fotos iniciales y se pierden las fotos creadas con `POST`. Esto se resolverá usando una base de datos real.
+- **Actualización parcial:**
+
+  Se agregó `update(id, datos)` en `FotosService`. Primero llama a `findOne(id)`, así que si la foto no existe el `404` sale sin escribir código extra. Luego copia sobre la foto únicamente los campos que vienen en `datos` con `Object.assign`; los que no se envían conservan su valor. El `id` se descarta aunque venga en el cuerpo, para que no se pueda modificar. En el controlador se expone con `@Patch(':id')`, que responde `200` con la foto actualizada.
+
+- **Eliminación:**
+
+  Se agregó `remove(id)`, que también reutiliza `findOne(id)` para el `404`. Después obtiene la posición de la foto con `indexOf` y la saca del arreglo con `splice(indice, 1)`. En el controlador se expone con `@Delete(':id')`.
+
+- **Respuesta 204:**
+
+  Por defecto Nest responde `200` en un `DELETE`. Con el decorador `@HttpCode(204)` la ruta responde `204 No Content`, es decir, sin cuerpo, que es lo habitual al eliminar.
+
+- **Corrección del id al crear:**
+
+  Antes, `create` calculaba el nuevo `id` como la cantidad de fotos más uno. Con la eliminación eso repetía ids: con tres fotos, al borrar la `2` quedaban dos, y la siguiente foto recibía el `id 3`, que ya existía. Ahora el nuevo `id` es el mayor `id` existente más uno, por lo que nunca se repite.
+
+### Parte 7: persistencia de los datos
+
+Como el arreglo `fotos` vive dentro del servicio, en la memoria del proceso de Node.js, cada vez que el servidor se reinicia (por ejemplo, al guardar un archivo con `start:dev`) la lista vuelve a las tres fotos iniciales y se pierden las fotos creadas, modificadas o eliminadas. Esto se resolverá usando una base de datos real.
 
 ### Verificación del funcionamiento
 
@@ -135,6 +155,18 @@ curl.exe -s -w " -> %{http_code}\n" http://localhost:3000/api/fotos/abc
 
 # Crear una foto -> 201
 curl.exe --% -s -w " -> %{http_code}\n" -X POST -H "Content-Type: application/json" -d "{\"titulo\":\"Cerro\",\"calificacion\":5}" http://localhost:3000/api/fotos
+
+# Actualizar solo la calificación de la foto 1 -> 200
+curl.exe --% -s -w " -> %{http_code}\n" -X PATCH -H "Content-Type: application/json" -d "{\"calificacion\":2}" http://localhost:3000/api/fotos/1
+
+# Actualizar una foto que no existe -> 404
+curl.exe --% -s -w " -> %{http_code}\n" -X PATCH -H "Content-Type: application/json" -d "{\"titulo\":\"Nuevo\"}" http://localhost:3000/api/fotos/9
+
+# Eliminar la foto 2 -> 204
+curl.exe -s -w " -> %{http_code}\n" -X DELETE http://localhost:3000/api/fotos/2
+
+# Eliminar otra vez la foto 2 -> 404
+curl.exe -s -w " -> %{http_code}\n" -X DELETE http://localhost:3000/api/fotos/2
 ```
 
 > En PowerShell se usa `curl.exe` en lugar de `curl`, y `--%` en las peticiones con cuerpo JSON para que las comillas lleguen intactas.
