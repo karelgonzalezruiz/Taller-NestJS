@@ -135,6 +135,17 @@ Cada foto tiene la siguiente forma:
 
   Antes, `create` calculaba el nuevo `id` como la cantidad de fotos más uno. Con la eliminación eso repetía ids: con tres fotos, al borrar la `2` quedaban dos, y la siguiente foto recibía el `id 3`, que ya existía. Ahora el nuevo `id` es el mayor `id` existente más uno, por lo que nunca se repite.
 
+- **Prueba sin datos:**
+
+  Se envió un `POST` sin título para ver qué pasaba:
+
+  | Cuerpo enviado       | Respuesta                                  |
+  | -------------------- | ------------------------------------------ |
+  | `{}`                 | `201` → `{"id":4}`                         |
+  | `{"calificacion":5}` | `201` → `{"calificacion":5,"id":5}`        |
+
+  En los dos casos la API acepta la petición y guarda una foto incompleta en la lista. Ocurre porque `Omit<Foto, 'id'>` es solo un tipo de TypeScript: desaparece al compilar, y en tiempo de ejecución nadie revisa el cuerpo de la petición. Esto se evitará en la sesión 5 agregando validación, para que un `POST` sin `titulo` responda `400`.
+
 ### Parte 7: persistencia de los datos
 
 Como el arreglo `fotos` vive dentro del servicio, en la memoria del proceso de Node.js, cada vez que el servidor se reinicia (por ejemplo, al guardar un archivo con `start:dev`) la lista vuelve a las tres fotos iniciales y se pierden las fotos creadas, modificadas o eliminadas. Esto se resolverá usando una base de datos real.
@@ -155,6 +166,9 @@ curl.exe -s -w " -> %{http_code}\n" http://localhost:3000/api/fotos/abc
 
 # Crear una foto -> 201
 curl.exe --% -s -w " -> %{http_code}\n" -X POST -H "Content-Type: application/json" -d "{\"titulo\":\"Cerro\",\"calificacion\":5}" http://localhost:3000/api/fotos
+
+# Crear sin título -> 201 (todavía no hay validación)
+curl.exe --% -s -w " -> %{http_code}\n" -X POST -H "Content-Type: application/json" -d "{}" http://localhost:3000/api/fotos
 
 # Actualizar solo la calificación de la foto 1 -> 200
 curl.exe --% -s -w " -> %{http_code}\n" -X PATCH -H "Content-Type: application/json" -d "{\"calificacion\":2}" http://localhost:3000/api/fotos/1
