@@ -94,7 +94,7 @@ Cada foto tiene la siguiente forma:
 
   - `findAll()` devuelve el arreglo completo.
   - `findOne(id)` busca la foto con `find()`. Si no existe, lanza `NotFoundException` con el mensaje `Foto X no encontrada`, y Nest la convierte automáticamente en una respuesta `404`.
-  - `create(datos)` recibe todos los campos menos el `id` (`Omit<Foto, 'id'>`), le asigna como `id` el mayor `id` existente más uno, la agrega al arreglo y la devuelve.
+  - `create(datos)` recibe todos los campos menos el `id` (`Omit<Foto, 'id'>`), le asigna como `id` el mayor `id` existente más uno, copia `titulo`, `descripcion` y `calificacion`, la agrega al arreglo y la devuelve.
 
 ### Parte 4: controlador y validación del id
 
@@ -114,14 +114,14 @@ Cada foto tiene la siguiente forma:
 
 - **Decorador incompleto:** en `fotos.service.ts` quedó un `@` suelto sin el nombre del decorador, lo que impedía a TypeScript leer el archivo. Se completó con `@Injectable()`.
 - **Importaciones a archivos eliminados:** `app.module.ts` seguía importando `app.controller.js` y `app.service.js` después de borrarlos. Se quitaron esas importaciones.
-- **"Cannot find module './entities/foto.entity.js'" solo en el editor:** el compilador encontraba el archivo, pero VS Code usaba su propia versión de TypeScript. Se agregó `.vscode/settings.json` con `typescript.tsdk` apuntando a `node_modules/typescript/lib`, y desde la paleta de comandos se eligió **TypeScript: Select TypeScript Version → Use Workspace Version** y luego **TypeScript: Restart TS Server**.
+- **"Cannot find module './entities/foto.entity.js'" solo en el editor:** el compilador encontraba el archivo, pero VS Code usaba su propia versión de TypeScript. Se agregó `.vscode/settings.json` con `typescript.tsdk` apuntando a `node_modules/typescript/lib`, y desde la paleta de comandos se eligió **TypeScript: Select TypeScript Version -> Use Workspace Version** y luego **TypeScript: Restart TS Server**.
 - **Llave de cierre de más:** una `}` después de `findOne` cerraba la clase antes de tiempo y dejaba el método `create` fuera de `FotosService`. Se eliminó esa llave.
 
 ### Parte 6: CRUD completo
 
 - **Actualización parcial:**
 
-  Se agregó `update(id, datos)` en `FotosService`. Primero llama a `findOne(id)`, así que si la foto no existe el `404` sale sin escribir código extra. Luego copia sobre la foto únicamente los campos que vienen en `datos` con `Object.assign`; los que no se envían conservan su valor. El `id` se descarta aunque venga en el cuerpo, para que no se pueda modificar. En el controlador se expone con `@Patch(':id')`, que responde `200` con la foto actualizada.
+  Se agregó `update(id, datos)` en `FotosService`. Primero llama a `findOne(id)`, así que si la foto no existe el `404` sale sin escribir código extra. Luego copia sobre la foto únicamente los campos que vienen en `datos` con `Object.assign`; los que no se envían conservan su valor. Después se vuelve a asignar el `id` original, para que no se pueda modificar aunque venga en el cuerpo. En el controlador se expone con `@Patch(':id')`, que responde `200` con la foto actualizada.
 
 - **Eliminación:**
 
@@ -141,8 +141,8 @@ Cada foto tiene la siguiente forma:
 
   | Cuerpo enviado       | Respuesta                                  |
   | -------------------- | ------------------------------------------ |
-  | `{}`                 | `201` → `{"id":4}`                         |
-  | `{"calificacion":5}` | `201` → `{"calificacion":5,"id":5}`        |
+  | `{}`                 | `201` -> `{"id":4}`                        |
+  | `{"calificacion":5}` | `201` -> `{"id":5,"calificacion":5}`       |
 
   En los dos casos la API acepta la petición y guarda una foto incompleta en la lista. Ocurre porque `Omit<Foto, 'id'>` es solo un tipo de TypeScript: desaparece al compilar, y en tiempo de ejecución nadie revisa el cuerpo de la petición. Esto se evitará en la sesión 5 agregando validación, para que un `POST` sin `titulo` responda `400`.
 
